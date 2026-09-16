@@ -18,7 +18,19 @@ router.get("/", async (req, res) => {
 });
 
 router.post("/", async (req, res) => {
-  const { enquiry_no, customer_id, required_date, notes, items } = req.body;
+  
+  let { enquiry_no, customer_id, required_date, notes, items, customerName, item: productName, quantity } = req.body;
+  if (customerName) {
+    let cust = await prisma.customer.findFirst({ where: { company_name: customerName } });
+    if (!cust) cust = await prisma.customer.create({ data: { company_name: customerName, contact_person: "Unknown", mobile: "0", email: "a@a.com", city: "Unknown" } });
+    customer_id = cust.id;
+  }
+  if (productName && (!items || items.length === 0)) {
+    let prod = await prisma.product.findFirst({ where: { name: productName } });
+    if (!prod) prod = await prisma.product.findFirst();
+    items = [{ product_id: prod.id, quantity: quantity || 1 }];
+  }
+
   try {
     const enquiry = await prisma.enquiry.create({
       data: {
@@ -42,3 +54,4 @@ router.post("/", async (req, res) => {
 });
 
 export default router;
+

@@ -1,35 +1,36 @@
-import { Router } from "express";
-import { authenticate, requireRole } from "../middlewares/auth";
+﻿import { Router } from "express";
+import { authenticate, requireRole, AuthRequest } from "../middlewares/auth";
 import prisma from "../prisma";
 
 const router = Router();
 
-router.use(authenticate, requireRole("ADMIN"));
-
-router.get("/", async (req, res) => {
-  const orders = await prisma.salesOrder.findMany({ include: { items: true, customer: true } });
+// Both roles can VIEW orders
+router.get("/", authenticate, async (req, res) => {
+  const orders = await prisma.salesOrder.findMany({ 
+    include: { items: true, customer: true },
+    orderBy: { id: "desc" }
+  });
   res.json(orders);
 });
 
-router.post("/:id/confirm", async (req, res) => {
+// Only ADMIN can confirm (reserve inventory)
+router.post("/:id/confirm", authenticate, requireRole("ADMIN"), async (req, res) => {
   try {
     const orderId = parseInt(req.params.id);
-
     const result = await prisma.$transaction(async (tx) => {
       const order = await tx.salesOrder.findUnique({
         where: { id: orderId },
         include: { items: true }
       });
-
       if (!order) throw new Error("Order not found");
-      if (order.status !== "PENDING") throw new Error("Order not pending");
+      if (order.status !== "PENDING") throw new Error("Order is not in PENDING status");
 
       for (const item of order.items) {
         const inv = await tx.inventory.findUnique({ where: { product_id: item.product_id } });
-        if (!inv) throw new Error("Inventory not found");
+        if (!inv) throw new Error(`No inventory record for product ${item.product_id}`);
         const available = inv.physical_quantity - inv.reserved_quantity;
         if (available < item.quantity) {
-          throw new Error("Cannot reserve more than available inventory");
+          throw new Error(`Insufficient stock for product ${item.product_id}. Available: ${available}, Required: ${item.quantity}`);
         }
         await tx.inventory.update({
           where: { product_id: item.product_id },
@@ -48,7 +49,8 @@ router.post("/:id/confirm", async (req, res) => {
   }
 });
 
-router.post("/:id/dispatch", async (req, res) => {
+// Only ADMIN can dispatch
+router.post("/:id/dispatch", authenticate, requireRole("ADMIN"), async (req, res) => {
   try {
     const orderId = parseInt(req.params.id);
     const { dispatch_no, vehicle_number, driver_name } = req.body;
@@ -58,9 +60,8 @@ router.post("/:id/dispatch", async (req, res) => {
         where: { id: orderId },
         include: { items: true }
       });
-
       if (!order) throw new Error("Order not found");
-      if (order.status !== "CONFIRMED") throw new Error("Order not confirmed");
+      if (order.status !== "CONFIRMED") throw new Error("Order must be CONFIRMED before dispatch");
 
       for (const item of order.items) {
         await tx.inventory.update({
@@ -73,12 +74,7 @@ router.post("/:id/dispatch", async (req, res) => {
       }
 
       await tx.dispatch.create({
-        data: {
-          dispatch_no,
-          order_id: orderId,
-          vehicle_number,
-          driver_name
-        }
+        data: { dispatch_no, order_id: orderId, vehicle_number, driver_name }
       });
 
       return await tx.salesOrder.update({
