@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import axios from "axios";
-
-const API = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
+import { API } from "../config";
 
 const SalesOrders = () => {
   const token = localStorage.getItem("token");
@@ -99,7 +98,7 @@ const SalesOrders = () => {
                   <tr key={order.id} className="border-b hover:bg-gray-50">
                     <td className="p-3 font-mono text-sm">{order.order_no}</td>
                     <td className="p-3">{order.customer?.company_name}</td>
-                    <td className="p-3 font-semibold">?{order.total_amount?.toFixed(2)}</td>
+                    <td className="p-3 font-semibold">₹{order.total_amount?.toFixed(2)}</td>
                     <td className="p-3 text-sm">{new Date(order.date).toLocaleDateString()}</td>
                     <td className="p-3">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
@@ -163,4 +162,3 @@ const SalesOrders = () => {
 };
 
 export default SalesOrders;
-

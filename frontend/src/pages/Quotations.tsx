@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import axios from "axios";
-
-const API = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
+import { API } from "../config";
 
 const Quotations = () => {
   const token = localStorage.getItem("token");
@@ -109,7 +108,7 @@ const Quotations = () => {
                 <select className="w-full border p-2 rounded" value={enquiryId} onChange={e => setEnquiryId(parseInt(e.target.value))} required>
                   <option value={0}>Select enquiry...</option>
                   {enquiries.map((enq: any) => (
-                    <option key={enq.id} value={enq.id}>{enq.enquiry_no} � {enq.customer?.company_name}</option>
+                    <option key={enq.id} value={enq.id}>{enq.enquiry_no} – {enq.customer?.company_name}</option>
                   ))}
                 </select>
               </div>
@@ -149,7 +148,7 @@ const Quotations = () => {
                         <td className="p-2"><input type="number" min={0} className="border p-1 rounded w-24" value={item.unit_price} onChange={e => updateItem(i, "unit_price", parseFloat(e.target.value))} /></td>
                         <td className="p-2"><input type="number" min={0} max={100} className="border p-1 rounded w-20" value={item.discount_pct} onChange={e => updateItem(i, "discount_pct", parseFloat(e.target.value))} /></td>
                         <td className="p-2"><input type="number" min={0} max={100} className="border p-1 rounded w-20" value={item.gst_pct} onChange={e => updateItem(i, "gst_pct", parseFloat(e.target.value))} /></td>
-                        <td className="p-2">{items.length > 1 && <button type="button" onClick={() => removeItem(i)} className="text-red-500">?</button>}</td>
+                        <td className="p-2">{items.length > 1 && <button type="button" onClick={() => removeItem(i)} className="text-red-500">✕</button>}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -182,7 +181,7 @@ const Quotations = () => {
                   <td className="p-3 font-mono text-sm">{q.quotation_no}</td>
                   <td className="p-3 text-sm">{q.enquiry_id}</td>
                   <td className="p-3">{q.customer?.company_name}</td>
-                  <td className="p-3 font-semibold">?{q.total_amount?.toFixed(2)}</td>
+                  <td className="p-3 font-semibold">₹{q.total_amount?.toFixed(2)}</td>
                   <td className="p-3 text-sm">{q.valid_until ? new Date(q.valid_until).toLocaleDateString() : "-"}</td>
                   <td className="p-3">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
@@ -203,7 +202,7 @@ const Quotations = () => {
                       </>
                     )}
                     {q.status === "ACCEPTED" && role === "SALES" && (
-                      <button onClick={() => convertToOrder(q.id)} className="bg-purple-500 text-white px-2 py-1 rounded text-xs hover:bg-purple-600">? Sales Order</button>
+                      <button onClick={() => convertToOrder(q.id)} className="bg-purple-500 text-white px-2 py-1 rounded text-xs hover:bg-purple-600">→ Sales Order</button>
                     )}
                   </td>
                 </tr>
@@ -219,4 +218,3 @@ const Quotations = () => {
 };
 
 export default Quotations;
-

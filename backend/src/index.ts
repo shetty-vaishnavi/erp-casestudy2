@@ -12,7 +12,7 @@ dotenv.config();
 
 const app = express();
 
-app.use(cors({ origin: '*', credentials: true }));
+app.use(cors());
 app.use(express.json());
 
 app.use("/api/auth", authRoutes);
@@ -21,6 +21,10 @@ app.use("/api/enquiries", enquiryRoutes);
 app.use("/api/quotations", quotationRoutes);
 app.use("/api/sales-orders", orderRoutes);
 app.use("/api/products", productRoutes);
+
+app.get("/health", (req, res) => {
+  res.json({ status: "ok" });
+});
 
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error(err.stack);
@@ -36,4 +40,3 @@ if (process.env.NODE_ENV !== "test") {
 }
 
 export default app;
-
