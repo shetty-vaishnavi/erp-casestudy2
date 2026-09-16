@@ -1,0 +1,16 @@
+﻿services:
+  - type: web
+    name: erp-backend
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install && npx prisma generate && npx prisma db push && npx tsx seed.ts
+    startCommand: npm start
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: PORT
+        value: 5000
+      - key: NODE_ENV
+        value: production

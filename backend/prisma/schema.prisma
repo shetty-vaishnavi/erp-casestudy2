@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -144,4 +144,5 @@ model Dispatch {
   
   order          SalesOrder @relation(fields: [order_id], references: [id])
 }
+
 
