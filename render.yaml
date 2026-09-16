@@ -9,7 +9,7 @@
       - key: DATABASE_URL
         sync: false
       - key: JWT_SECRET
-        sync: false
+        value: supersecret_erp_casestudy_key
       - key: PORT
         value: 5000
       - key: NODE_ENV
