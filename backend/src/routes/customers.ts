@@ -1,27 +1,28 @@
-﻿import { Router } from "express";
-import { authenticate } from "../middlewares/auth";
+import { Router } from "express";
+import { authenticate, requireRole } from "../middlewares/auth";
 import prisma from "../prisma";
 
 const router = Router();
 
-router.post("/", authenticate, async (req, res) => {
+router.post("/", async (req, res) => {
   try {
     const { company_name, contact_person, mobile, email, city } = req.body;
-    // Use upsert to avoid duplicate customer errors
-    const customer = await prisma.customer.upsert({
-      where: { id: 0 },
-      update: {},
-      create: { company_name, contact_person, mobile, email, city }
+    if (!company_name) return res.status(400).json({ error: "company_name is required" });
+
+    // Proper find-or-create: look up by company_name first
+    let customer = await prisma.customer.findFirst({
+      where: { company_name: company_name.trim() }
     });
-    res.json(customer);
-  } catch (error) {
-    // Fallback: just create
-    try {
-      const customer = await prisma.customer.create({ data: req.body });
-      res.json(customer);
-    } catch (e: any) {
-      res.status(400).json({ error: "Failed to create customer" });
+
+    if (!customer) {
+      customer = await prisma.customer.create({
+        data: { company_name: company_name.trim(), contact_person, mobile, email, city }
+      });
     }
+
+    res.json(customer);
+  } catch (error: any) {
+    res.status(400).json({ error: "Failed to create customer", detail: error.message });
   }
 });
 

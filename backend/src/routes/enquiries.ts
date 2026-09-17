@@ -4,12 +4,17 @@ import prisma from "../prisma";
 
 const router = Router();
 
-router.use(authenticate, requireRole("SALES"));
-
-router.get("/", async (req, res) => {
+// Both ADMIN and SALES can view enquiries
+router.get("/", authenticate, requireRole("ADMIN", "SALES"), async (req, res) => {
   try {
     const enquiries = await prisma.enquiry.findMany({
-      include: { items: true, customer: true }
+      include: {
+        customer: true,
+        items: {
+          include: { product: true }
+        }
+      },
+      orderBy: { id: "desc" }
     });
     res.json(enquiries);
   } catch (error) {
@@ -17,18 +22,12 @@ router.get("/", async (req, res) => {
   }
 });
 
-router.post("/", async (req, res) => {
-  
-  let { enquiry_no, customer_id, required_date, notes, items, customerName, item: productName, quantity } = req.body;
-  if (customerName) {
-    let cust = await prisma.customer.findFirst({ where: { company_name: customerName } });
-    if (!cust) cust = await prisma.customer.create({ data: { company_name: customerName, contact_person: "Unknown", mobile: "0", email: "a@a.com", city: "Unknown" } });
-    customer_id = cust.id;
-  }
-  if (productName && (!items || items.length === 0)) {
-    let prod = await prisma.product.findFirst({ where: { name: productName } });
-    if (!prod) prod = await prisma.product.findFirst();
-    items = [{ product_id: prod.id, quantity: quantity || 1 }];
+// Only SALES can create enquiries
+router.post("/", authenticate, requireRole("SALES"), async (req, res) => {
+  const { enquiry_no, customer_id, required_date, notes, items } = req.body;
+
+  if (!enquiry_no || !customer_id || !required_date || !items || items.length === 0) {
+    return res.status(400).json({ error: "enquiry_no, customer_id, required_date, and items are required" });
   }
 
   try {
@@ -45,13 +44,17 @@ router.post("/", async (req, res) => {
           }))
         }
       },
-      include: { items: true }
+      include: {
+        items: {
+          include: { product: true }
+        },
+        customer: true
+      }
     });
     res.json(enquiry);
-  } catch (error) {
-    res.status(400).json({ error: "Failed to create enquiry" });
+  } catch (error: any) {
+    res.status(400).json({ error: "Failed to create enquiry", detail: error.message });
   }
 });
 
 export default router;
-

@@ -12,7 +12,10 @@ dotenv.config();
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+  origin: true, // Allow all origins (frontend on Render static, localhost etc.)
+  credentials: true,
+}));
 app.use(express.json());
 
 app.use("/api/auth", authRoutes);
